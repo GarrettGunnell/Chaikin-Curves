@@ -1,68 +1,52 @@
 const PATH_LENGTH = 16;
-const NUM_PATHS = 6;
-const NUM_CUTS = 5;
-const HORIZONTAL_CHANCE = 0.0;
+const NUM_PATHS = 8;
+const MIN_CUTS = 2;
+const MAX_CUTS = 5;
 
 var paths = [];
 var time = 0;
 
-var capturer = new CCapture({ format: 'png', framerate: 60});
-
 function setup() {
-    createCanvas(1920, 1080);
+    createCanvas(1600, 1080);
     createPaths();
 }
 
 function draw() {
-    
-    if (frameCount === 1)
-        capturer.start();
-
-    if (frameCount === 1200) {
-        noLoop();
-        capturer.stop();
-        capturer.save();
-    }
-    
     background(205, 15, 40);
     drawPaths();
     fill(205, 15, 40)
     noStroke();
-
-    capturer.capture(document.getElementById('defaultCanvas0'));
+    
     time += deltaTime;
 }
 
-function Path(path, vertical) {
+function Path(path) {
     return {
         path: path,
-        vertical: vertical,
         rectanglePos: createVector(0, 0),
-        rectangleSpeed: random(0.03, 0.08)
+        rectangleSpeed: random(0.06, 0.1)
     }
 }
 
 function createPaths() {
     for (let i = 0; i < NUM_PATHS; ++i) {
-        var vertical = random();
+        randomSeed(random(1000));
         var path = []
-        path[0] = vertical > HORIZONTAL_CHANCE ? createVector(random(width), -200) : createVector(-200, random(height));
+
+        var widthRange = random(((i / NUM_PATHS) * width) - 20, ((i / NUM_PATHS) * width) + 20);
+        path[0] = createVector(widthRange, -200);
         for (let j = 1; j < PATH_LENGTH; ++j) {
-            var widthRange = random(
-                ((j / PATH_LENGTH) * width) + 20,
-                (((j + 1) / PATH_LENGTH) * width) - 20
-            );
+            var heightRange = random(((j / PATH_LENGTH) * height) - 20, (((j + 1) / PATH_LENGTH) * height) + 20);
+            var widthRange = random(0, width);
 
-            var heightRange = random(0, height);
-
-            path[j] = vertical > HORIZONTAL_CHANCE ? createVector(heightRange, widthRange) : createVector(widthRange, heightRange);
+            path[j] = createVector(widthRange, heightRange);
         }
-        path[PATH_LENGTH] = vertical > HORIZONTAL_CHANCE ? createVector(random(width), height + 200) : createVector(width + 200, random(height));
+        path[PATH_LENGTH] = createVector(random(width), height + 200);
 
-        for (let k = 0; k < random(NUM_CUTS - 4, NUM_CUTS); ++k)
-            path = cornerCut(path);
+        for (let k = 0; k < random(MIN_CUTS, MAX_CUTS); ++k)
+            path = Chaikin(path);
 
-        paths.push(Path(path, vertical));
+        paths.push(Path(path));
     }
 
     paths.sort((a, b) => (a.rectangleSpeed > b.rectangleSpeed) ? 1 : -1);
@@ -79,16 +63,12 @@ function drawPaths() {
             var rectPos = paths[i].rectanglePos;
             noStroke();
             rect(rectPos.x, rectPos.y, width, height);
-
-            if (paths[i].vertical > HORIZONTAL_CHANCE)
-                paths[i].rectanglePos.y = time * paths[i].rectangleSpeed;
-            else
-                paths[i].rectanglePos.x = time * paths[i].rectangleSpeed;
+            paths[i].rectanglePos.y = time * paths[i].rectangleSpeed;
         }
     }
 }
 
-function cornerCut(path) {
+function Chaikin(path) {
     var newPath = []
     for (let i = 0; i < path.length - 1; ++i) {
         var p1 = path[i];
