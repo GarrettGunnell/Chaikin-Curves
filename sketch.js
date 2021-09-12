@@ -7,7 +7,7 @@ var paths = [];
 var time = 0;
 
 function setup() {
-    createCanvas(1600, 1080);
+    createCanvas(506, 506);
     createPaths();
 }
 
